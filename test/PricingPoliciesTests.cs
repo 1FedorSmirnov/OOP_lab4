@@ -70,4 +70,94 @@ public class PricingPoliciesTests
         //Assert
         Assert.Equal(expected, result);
     }
+
+    [Fact]
+    public void TaxRatePolicy_ShouldAddTaxOnSum()
+    {
+        //Arrange
+        var policy = new TaxRatePolicy(0.2m);
+        var baseSum = 1000m;
+        var expected = baseSum + baseSum * 0.20m;
+
+        //Act
+        var result = policy.ApplyTax(baseSum, null);
+
+        //Assert
+        Assert.Equal(expected, result);
+    }
+    
+    [Fact]
+    public void NoTaxPolicy_ShouldNotChangeSum()
+    {
+        //Arrange
+        var policy = new NoTaxPolicy();
+        var baseSum = 1000m;
+  
+        //Act
+        var result = policy.ApplyTax(baseSum, null);
+
+        //Assert
+        Assert.Equal(baseSum, result);
+    }
+    
+    [Fact]
+    public void FixedDeliveryFeePolicy_ShouldReturnFixedFee()
+    {
+        //Arrange
+        var policy = new FixedDeliveryFeePolicy(250m);
+
+        //Act
+        var fee = policy.CalculateDeliveryFee( null);
+
+        //Assert
+        Assert.Equal(250m, fee);
+    }
+    
+    [Fact]
+    public void DeliveryFeeOverThresholdPolicy_ShouldBeFree()
+    {
+        //Arrange
+        const decimal threshold = 1000m;
+        const decimal feeBelow = 250m;
+        var policy = new DeliveryFeeOverThresholdPolicy(threshold, feeBelow);
+        //Заказ с суммой, превышающей порог
+        var order = CreateOrderWithCertainTotalSum(1200m);
+
+        //Act
+        var fee = policy.CalculateDeliveryFee(order);
+
+        //Assert
+        Assert.Equal(0m, fee);
+    }
+    
+    [Fact]
+    public void ExpressDeliveryFeePolicy_ShouldAddExtraFree()
+    {
+        //Arrange
+        var basePolicy = new FixedDeliveryFeePolicy(200m);
+        var policy = new ExpressDeliveryFeePolicy(150m, basePolicy);
+        //Заказ с экспресс доставкой
+        var order = CreateOrderWithCertainTotalSum(500m, true );
+        var expectedFee = basePolicy.CalculateDeliveryFee(order) + 150m;
+        //Act
+        var fee = policy.CalculateDeliveryFee(order);
+
+        //Assert
+        Assert.Equal(expectedFee, fee);
+    }
+    
+    [Fact]
+    public void ExpressDeliveryFeePolicy_ShouldNotAddExtraFee_ForNonExpressOrder()
+    {
+        //Arrange
+        var basePolicy = new FixedDeliveryFeePolicy(fee: 200m);
+        var policy = new ExpressDeliveryFeePolicy(expressExtraFee: 150m, basePolicy);
+
+        // Создаём заказ с isExpress = false
+        var order = CreateOrderWithCertainTotalSum(500m, isExpress: false);
+        //Act
+        var fee = policy.CalculateDeliveryFee(order);
+        //Assert
+        Assert.Equal(200m, fee);
+    }
 }

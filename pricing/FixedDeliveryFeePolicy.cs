@@ -8,7 +8,7 @@ public class FixedDeliveryFeePolicy : IDeliveryFeePolicy
     
     public FixedDeliveryFeePolicy(decimal fee)
     {
-        if (fee <= 0) 
+        if (fee < 0) 
             throw new ArgumentException("Delivery fee must be greater than zero", nameof(fee));
         _fee = fee;
     }
